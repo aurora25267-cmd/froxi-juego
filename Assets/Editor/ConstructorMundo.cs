@@ -268,11 +268,61 @@ public static class ConstructorMundo
             fg.AddComponent<FlechaRebote>();
         }
 
+        // 7) la puerta de la casita (lleva al nivel de la escuela)
+        CrearEntradaCasa(root.transform, me, H);
+
         EditorSceneManager.MarkSceneDirty(root.scene);
         Selection.activeGameObject = root;
         if (SceneView.lastActiveSceneView != null) SceneView.lastActiveSceneView.FrameSelected();
         EditorUtility.DisplayDialog("Mapa construido",
             "Listo: en Hierarchy tienes el objeto 'Mundo' con una Tilemap por capa, Froxi y la entrada de la cueva.\n\nGuarda la escena con Ctrl+S y presiona Play.", "Ok");
+    }
+
+    // ------------------------------------------------------------ puerta de la casita
+    // La puerta de la casita esta en la columna 21, fila 7 del mapa (la casa roja de arriba).
+    const float CASA_X = 21.0f;
+    const float CASA_FILA = 7.6f;
+
+    static void CrearEntradaCasa(Transform root, MundoEditable me, int H)
+    {
+        GameObject z = new GameObject("EntradaCasa");
+        z.transform.SetParent(root, false);
+        z.transform.position = new Vector3(CASA_X, H - CASA_FILA, 0f);
+        me.entradaCasa = z.transform;
+
+        Sprite fl = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Resources/UI/ui_flecha_arriba.png");
+        GameObject fg = new GameObject("FlechaCasa");
+        fg.transform.SetParent(root, false);
+        fg.transform.position = new Vector3(CASA_X, H - CASA_FILA - 1.2f, 0f);
+        SpriteRenderer fs = fg.AddComponent<SpriteRenderer>();
+        fs.sprite = fl;
+        fs.sortingOrder = -5;
+        fg.AddComponent<FlechaRebote>();
+    }
+
+    // Menu para quien ya construyo su mapa antes: le agrega la puerta sin borrar lo que pinto.
+    [MenuItem("Froxi/Mundo/Agregar puerta de la casita (escuela)")]
+    public static void AgregarPuertaCasa()
+    {
+        MundoEditable me = Object.FindObjectOfType<MundoEditable>(true);
+        if (me == null)
+        {
+            EditorUtility.DisplayDialog("No hay mundo", "Abre la escena del mapa (la que tiene el objeto 'Mundo') o usa Froxi > Mundo > Construir mapa en esta escena.", "Ok");
+            return;
+        }
+        if (me.entradaCasa != null)
+        {
+            EditorUtility.DisplayDialog("Ya existe", "El mundo ya tiene la puerta de la casita (objeto '" + me.entradaCasa.name + "').", "Ok");
+            return;
+        }
+        int H = 32;
+        if (me.suelo != null) H = Mathf.Max(H, me.suelo.cellBounds.yMax);
+        CrearEntradaCasa(me.transform, me, H);
+        EditorUtility.SetDirty(me);
+        EditorSceneManager.MarkSceneDirty(me.gameObject.scene);
+        Selection.activeTransform = me.entradaCasa;
+        EditorUtility.DisplayDialog("Puerta agregada",
+            "Listo: 'EntradaCasa' y 'FlechaCasa' estan dentro de 'Mundo'. Al llegar a la puerta de la casita Froxi entra al nivel de la escuela.\n\nGuarda la escena con Ctrl+S.", "Ok");
     }
 
     static int Orden(string capa)
